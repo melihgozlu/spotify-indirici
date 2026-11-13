@@ -15,7 +15,6 @@ function sanitizeFileName(name) {
   return name.replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, ' ').trim();
 }
 
-// Spotify embed sayfasından şarkı listesini ve parça kimliklerini çekme
 async function getPublicPlaylistTracks(playlistId) {
   const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}`;
   const response = await fetch(embedUrl, {
@@ -57,7 +56,6 @@ async function getPublicPlaylistTracks(playlistId) {
   return { playlistName, playlistCover, tracks };
 }
 
-// Spotify oEmbed üzerinden şarkının yüksek çözünürlüklü albüm kapağını indirme
 async function getTrackCoverBuffer(trackId, fallbackCover) {
   let coverUrl = fallbackCover || '';
   try {
@@ -81,7 +79,6 @@ async function getTrackCoverBuffer(trackId, fallbackCover) {
   }
 }
 
-// 1. Endpoint: Şarkı listesini ön yüze gönderir
 app.get('/playlist', async (req, res) => {
   const playlistId = req.query.id;
   if (!playlistId) return res.status(400).json({ error: 'Playlist ID gerekli' });
@@ -96,7 +93,6 @@ app.get('/playlist', async (req, res) => {
   }
 });
 
-// 2. Endpoint: Şarkıyı MP3 yapar, albüm kapağı ile ID3 etiketlerini gömer ve indirir
 app.get('/download-track', async (req, res) => {
   const { artist, name, album, trackId, fallbackCover } = req.query;
   if (!artist || !name) return res.status(400).json({ error: 'Sanatçı ve şarkı adı gerekli' });
@@ -105,6 +101,7 @@ app.get('/download-track', async (req, res) => {
   const tempBase = path.join(os.tmpdir(), `sp_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
   const finalMp3Path = `${tempBase}.mp3`;
 
+  // Bulut sunucusu IP engelini aşmak için mobil istemci (android/ios) simülasyonu
   const ytOptions = {
     extractAudio: true,
     audioFormat: 'mp3',
@@ -112,6 +109,8 @@ app.get('/download-track', async (req, res) => {
     output: `${tempBase}.%(ext)s`,
     noCheckCertificates: true,
     noWarnings: true,
+    extractorArgs: 'youtube:player_client=android,ios',
+    forceIpv4: true
   };
 
   const cleanup = () => {
@@ -125,17 +124,17 @@ app.get('/download-track', async (req, res) => {
     try {
       await youtubedl(`ytsearch1:${artist} ${name} audio`, ytOptions);
     } catch (firstErr) {
+      console.error(`  -> İlk arama detayı:`, firstErr.stderr || firstErr.message);
       const cleanArtist = artist.split(',')[0].trim();
       const cleanName = name.replace(/\(.*?\)|\[.*?\]/g, '').trim();
       console.log(`  -> Alternatif arama: ${cleanArtist} - ${cleanName}`);
-      await youtubedl(`ytsearch1:${cleanArtist} ${cleanName} official audio`, ytOptions);
+      await youtubedl(`ytsearch1:${cleanArtist} ${cleanName}`, ytOptions);
     }
 
     if (!fs.existsSync(finalMp3Path)) {
       throw new Error('MP3 dosyası oluşturulamadı');
     }
 
-    // Albüm kapağını çek ve ID3 meta verilerini MP3 dosyasına işle
     const coverBuffer = await getTrackCoverBuffer(trackId, fallbackCover);
     const tags = {
       title: name,
@@ -172,7 +171,7 @@ app.get('/download-track', async (req, res) => {
 
   } catch (error) {
     cleanup();
-    console.warn(`  -> ATLANDI: ${safeFileName}`);
+    console.warn(`  -> ATLANDI (${safeFileName}):`, error.stderr || error.message);
     if (!res.headersSent) {
       res.status(404).json({ error: 'Şarkı bulunamadı' });
     }
