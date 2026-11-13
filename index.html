@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reklamsız Spotify İndirici</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #181818;
+            padding: 32px 28px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 560px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+            border: 1px solid #242424;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #1DB954;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            background-color: #242424;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="url"]:focus {
+            border-color: #1DB954;
+            box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
+            background-color: #1DB954;
+            color: #000000;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #1ed760;
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.99);
+        }
+
+        button:disabled {
+            background-color: #333333;
+            color: #777777;
+            cursor: not-allowed;
+        }
+
+        #status-message {
+            margin-top: 16px;
+            font-size: 13px;
+            text-align: center;
+            color: #b3b3b3;
+            min-height: 18px;
+        }
+
+        /* Playlist Bilgi Kartı ve İlerleme Çubuğu */
+        .playlist-summary {
+            display: none;
+            margin-top: 22px;
+            padding: 14px;
+            background-color: #202020;
+            border-radius: 12px;
+            border: 1px solid #2c2c2c;
+        }
+
+        .playlist-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .playlist-cover {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            background-color: #282828;
+            flex-shrink: 0;
+        }
+
+        .playlist-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .playlist-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-counter {
+            font-size: 12px;
+            color: #a7a7a7;
+            margin-top: 3px;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background-color: #333333;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #1DB954;
+            border-radius: 999px;
+            transition: width 0.35s ease;
+        }
+
+        /* Şarkı Listesi Alanı */
+        .track-list {
+            display: none;
+            margin-top: 14px;
+            max-height: 320px;
+            overflow-y: auto;
+            border-radius: 12px;
+            background-color: #141414;
+            border: 1px solid #262626;
+            padding: 6px;
+        }
+
+        .track-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .track-list::-webkit-scrollbar-track {
+            background: #141414;
+        }
+
+        .track-list::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        .track-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #1e1e1e;
+        }
+
+        .track-item:last-child {
+            border-bottom: none;
+        }
+
+        .track-item.active {
+            background-color: rgba(29, 185, 84, 0.1);
+        }
+
+        .track-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .track-index {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666666;
+            width: 22px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .track-details {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .track-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #f1f1f1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .track-artist {
+            font-size: 12px;
+            color: #8e8e8e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+
+        /* Durum Rozetleri */
+        .badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 9px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .badge-waiting {
+            background-color: #242424;
+            color: #888888;
+        }
+
+        .badge-downloading {
+            background-color: rgba(29, 185, 84, 0.18);
+            color: #1DB954;
+        }
+
+        .badge-done {
+            background-color: rgba(29, 185, 84, 0.22);
+            color: #1ed760;
+        }
+
+        .badge-error {
+            background-color: rgba(255, 77, 77, 0.15);
+            color: #ff6b6b;
+        }
+
+        .mini-spinner {
+            width: 11px;
+            height: 11px;
+            border: 2px solid rgba(29, 185, 84, 0.3);
+            border-top-color: #1DB954;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Sağ Alt Sabit Instagram Butonu */
+        .instagram-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background-color: #181818;
+            border: 1px solid #2c2c2c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #b3b3b3;
+            text-decoration: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            transition: all 0.25s ease;
+            z-index: 1000;
+        }
+
+        .instagram-btn:hover {
+            color: #ffffff;
+            border-color: transparent;
+            background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(225, 48, 108, 0.35);
+        }
+
+        .instagram-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Playlist İndirici</h1>
+            <p>Playlist linkini aşağıya yapıştırın</p>
+        </div>
+
+        <div class="input-group">
+            <input type="url" id="playlist-url" placeholder="https://open.spotify.com/playlist/..." autocomplete="off">
+            <button id="download-btn">Şarkıları İndir</button>
+        </div>
+
+        <div id="status-message"></div>
+
+        <!-- Playlist Özet ve İlerleme Çubuğu -->
+        <div class="playlist-summary" id="playlist-summary">
+            <div class="playlist-meta">
+                <img id="playlist-cover" class="playlist-cover" src="" alt="Kapak">
+                <div class="playlist-info">
+                    <div class="playlist-title" id="playlist-title">Çalma Listesi</div>
+                    <div class="playlist-counter" id="playlist-counter">0 / 0 şarkı indirildi</div>
+                </div>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- Canlı Şarkı Listesi -->
+        <div class="track-list" id="track-list"></div>
+    </div>
+
+    <!-- Sağ Alt Instagram Bağlantısı -->
+    <a href="https://www.instagram.com/melihgozlu/" target="_blank" rel="noopener noreferrer" class="instagram-btn" title="Instagram: @melihgozlu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+        </svg>
+    </a>
+
+    <script>
+        const downloadBtn = document.getElementById('download-btn');
+        const urlInput = document.getElementById('playlist-url');
+        const statusMessage = document.getElementById('status-message');
+        const playlistSummary = document.getElementById('playlist-summary');
+        const playlistCoverImg = document.getElementById('playlist-cover');
+        const playlistTitleEl = document.getElementById('playlist-title');
+        const playlistCounterEl = document.getElementById('playlist-counter');
+        const progressFill = document.getElementById('progress-fill');
+        const trackListEl = document.getElementById('track-list');
+
+        const BACKEND_URL = 'http://localhost:3000';
+
+        function sanitizeClientFileName(name) {
+            return name.replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        function setBadgeState(badgeEl, rowEl, state) {
+            rowEl.classList.remove('active');
+            badgeEl.className = 'badge';
+
+            if (state === 'waiting') {
+                badgeEl.classList.add('badge-waiting');
+                badgeEl.textContent = 'Bekliyor';
+            } else if (state === 'downloading') {
+                rowEl.classList.add('active');
+                badgeEl.classList.add('badge-downloading');
+                badgeEl.innerHTML = '<span class="mini-spinner"></span> İndiriliyor';
+                rowEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else if (state === 'done') {
+                badgeEl.classList.add('badge-done');
+                badgeEl.textContent = 'İndirildi ✓';
+            } else if (state === 'error') {
+                badgeEl.classList.add('badge-error');
+                badgeEl.textContent = 'Bulunamadı ✕';
+            }
+        }
+
+        downloadBtn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url.includes('spotify.com/playlist/')) {
+                statusMessage.style.color = '#ff4d4d';
+                statusMessage.textContent = 'Lütfen geçerli bir Spotify Çalma Listesi linki girin.';
+                return;
+            }
+
+            const playlistId = url.split('playlist/')[1].split('?')[0];
+            downloadBtn.disabled = true;
+            urlInput.disabled = true;
+            playlistSummary.style.display = 'none';
+            trackListEl.style.display = 'none';
+            trackListEl.innerHTML = '';
+            progressFill.style.width = '0%';
+
+            statusMessage.style.color = '#1DB954';
+            statusMessage.textContent = 'Çalma listesi taranıyor...';
+
+            try {
+                // 1. Şarkı listesini çek
+                const listRes = await fetch(`${BACKEND_URL}/playlist?id=${playlistId}`);
+                if (!listRes.ok) throw new Error('Çalma listesi okunamadı.');
+                const { playlistName, playlistCover, tracks } = await listRes.json();
+
+                // Üst özet kartını doldur
+                playlistTitleEl.textContent = playlistName;
+                playlistCounterEl.textContent = `0 / ${tracks.length} şarkı indirildi`;
+                if (playlistCover) {
+                    playlistCoverImg.src = playlistCover;
+                    playlistCoverImg.style.display = 'block';
+                    playlistCoverImg.onerror = () => { playlistCoverImg.style.display = 'none'; };
+                } else {
+                    playlistCoverImg.style.display = 'none';
+                }
+                playlistSummary.style.display = 'block';
+
+                // 2. Bulunan tüm şarkıları anında ekrana listele
+                const rowElements = [];
+                tracks.forEach((track, idx) => {
+                    const row = document.createElement('div');
+                    row.className = 'track-item';
+
+                    const left = document.createElement('div');
+                    left.className = 'track-left';
+
+                    const indexSpan = document.createElement('span');
+                    indexSpan.className = 'track-index';
+                    indexSpan.textContent = idx + 1;
+
+                    const details = document.createElement('div');
+                    details.className = 'track-details';
+
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'track-name';
+                    nameDiv.textContent = track.name;
+
+                    const artistDiv = document.createElement('div');
+                    artistDiv.className = 'track-artist';
+                    artistDiv.textContent = track.artist;
+
+                    details.appendChild(nameDiv);
+                    details.appendChild(artistDiv);
+                    left.appendChild(indexSpan);
+                    left.appendChild(details);
+
+                    const badge = document.createElement('span');
+                    setBadgeState(badge, row, 'waiting');
+
+                    row.appendChild(left);
+                    row.appendChild(badge);
+                    trackListEl.appendChild(row);
+
+                    rowElements.push({ row, badge });
+                });
+
+                trackListEl.style.display = 'block';
+                statusMessage.textContent = `${tracks.length} şarkı bulundu, indirme sırayla başlıyor...`;
+
+                let downloadedCount = 0;
+
+                // 3. Şarkıları tek tek indir ve satır durumunu anlık güncelle
+                for (let i = 0; i < tracks.length; i++) {
+                    const track = tracks[i];
+                    const { row, badge } = rowElements[i];
+                    const displayTitle = `${track.artist} - ${track.name}`;
+
+                    setBadgeState(badge, row, 'downloading');
+
+                    try {
+                        const params = new URLSearchParams({
+                            artist: track.artist,
+                            name: track.name,
+                            album: playlistName,
+                            trackId: track.trackId || '',
+                            fallbackCover: playlistCover || ''
+                        });
+
+                        const trackRes = await fetch(`${BACKEND_URL}/download-track?${params.toString()}`);
+
+                        if (trackRes.ok) {
+                            const blob = await trackRes.blob();
+                            const downloadUrl = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.style.display = 'none';
+                            a.href = downloadUrl;
+                            a.download = `${sanitizeClientFileName(displayTitle)}.mp3`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(downloadUrl);
+                            a.remove();
+
+                            downloadedCount++;
+                            setBadgeState(badge, row, 'done');
+                        } else {
+                            setBadgeState(badge, row, 'error');
+                        }
+                    } catch (trackErr) {
+                        setBadgeState(badge, row, 'error');
+                    }
+
+                    // İlerleme çubuğunu ve sayacı güncelle
+                    const percent = Math.round(((i + 1) / tracks.length) * 100);
+                    progressFill.style.width = `${percent}%`;
+                    playlistCounterEl.textContent = `${downloadedCount} / ${tracks.length} şarkı indirildi`;
+                }
+
+                statusMessage.style.color = '#1ed760';
+                statusMessage.textContent = `İşlem tamamlandı! Toplam ${downloadedCount} şarkı MP3 olarak indirildi.`;
+            } catch (error) {
+                statusMessage.style.color = '#ff4d4d';
+                statusMessage.textContent = 'Sunucuya bağlanılamadı veya çalma listesi gizli.';
+            } finally {
+                downloadBtn.disabled = false;
+                urlInput.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
