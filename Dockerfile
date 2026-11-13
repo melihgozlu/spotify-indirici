@@ -3,6 +3,7 @@ FROM node:20-slim
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     python3 \
+    python-is-python3 \
     yt-dlp \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
