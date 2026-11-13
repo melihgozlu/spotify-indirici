@@ -407,7 +407,12 @@
                 badgeEl.textContent = 'Bulunamadı ✕';
             }
         }
-
+urlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !downloadBtn.disabled) {
+                e.preventDefault();
+                downloadBtn.click();
+            }
+        });
         downloadBtn.addEventListener('click', async () => {
             const url = urlInput.value.trim();
             if (!url.includes('spotify.com/playlist/')) {
