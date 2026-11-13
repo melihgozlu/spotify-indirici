@@ -79,6 +79,14 @@ async function getTrackCoverBuffer(trackId, fallbackCover) {
   }
 }
 
+// Çerez varsa geçici dosyaya yaz (Yöntem 2 desteği için hazır)
+function getCookieFilePath() {
+  if (!process.env.YT_COOKIES) return null;
+  const cookiePath = path.join(os.tmpdir(), 'yt_cookies.txt');
+  fs.writeFileSync(cookiePath, process.env.YT_COOKIES, 'utf8');
+  return cookiePath;
+}
+
 app.get('/playlist', async (req, res) => {
   const playlistId = req.query.id;
   if (!playlistId) return res.status(400).json({ error: 'Playlist ID gerekli' });
@@ -100,18 +108,21 @@ app.get('/download-track', async (req, res) => {
   const safeFileName = sanitizeFileName(`${artist} - ${name}`);
   const tempBase = path.join(os.tmpdir(), `sp_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
   const finalMp3Path = `${tempBase}.mp3`;
+  const cookiePath = getCookieFilePath();
 
-  // Bulut sunucusu IP engelini aşmak için mobil istemci (android/ios) simülasyonu
-  const ytOptions = {
+  const baseOptions = {
     extractAudio: true,
     audioFormat: 'mp3',
     audioQuality: 0,
     output: `${tempBase}.%(ext)s`,
     noCheckCertificates: true,
     noWarnings: true,
-    extractorArgs: 'youtube:player_client=android,ios',
     forceIpv4: true
   };
+
+  if (cookiePath) {
+    baseOptions.cookies = cookiePath;
+  }
 
   const cleanup = () => {
     if (fs.existsSync(finalMp3Path)) {
@@ -120,15 +131,20 @@ app.get('/download-track', async (req, res) => {
   };
 
   try {
-    console.log(`İndiriliyor ve etiketleniyor: ${safeFileName}`);
+    console.log(`İndiriliyor: ${safeFileName}`);
+    const cleanArtist = artist.split(',')[0].trim();
+    const cleanName = name.replace(/\(.*?\)|\[.*?\]/g, '').trim();
+
     try {
-      await youtubedl(`ytsearch1:${artist} ${name} audio`, ytOptions);
-    } catch (firstErr) {
-      console.error(`  -> İlk arama detayı:`, firstErr.stderr || firstErr.message);
-      const cleanArtist = artist.split(',')[0].trim();
-      const cleanName = name.replace(/\(.*?\)|\[.*?\]/g, '').trim();
-      console.log(`  -> Alternatif arama: ${cleanArtist} - ${cleanName}`);
-      await youtubedl(`ytsearch1:${cleanArtist} ${cleanName}`, ytOptions);
+      // 1. Aşama: YouTube TV/Mobil istemci ile dene
+      await youtubedl(`ytsearch1:${artist} ${name} audio`, {
+        ...baseOptions,
+        extractorArgs: 'youtube:player_client=tv_embedded,mweb'
+      });
+    } catch (ytErr) {
+      console.log(`  -> YouTube engellendi, SoundCloud deneniyor: ${cleanArtist} - ${cleanName}`);
+      // 2. Aşama: Veri merkezi IP engeli olmayan SoundCloud üzerinden indir
+      await youtubedl(`scsearch1:${cleanArtist} ${cleanName}`, baseOptions);
     }
 
     if (!fs.existsSync(finalMp3Path)) {
